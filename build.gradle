@@ -1,0 +1,69 @@
+plugins {
+    id 'java-library'
+    id 'java'
+}
+
+group = "io.github.sskorol"
+version = "1.0.0-SNAPSHOT"
+
+ext {
+    moduleName = 'io.github.sskorol.reflection'
+}
+
+repositories {
+    jcenter()
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+
+dependencies {
+    compile(
+            'org.jooq:joor:0.9.12',
+            'one.util:streamex:0.7.0',
+            'io.vavr:vavr:1.0.0-alpha-3',
+            'org.testng:testng:7.0.0'
+    )
+    testCompile('org.assertj:assertj-core:3.11.1')
+}
+
+compileJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+                '-Xlint:deprecation'
+        ]
+        classpath = files()
+    }
+}
+
+compileTestJava {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.compilerArgs = [
+                '--module-path', classpath.asPath,
+                '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
+                '-Xlint:deprecation',
+        ]
+        classpath = files()
+    }
+}
+
+test {
+    useTestNG() {
+        suites "src/test/resources/smoke-suite-local.xml"
+    }
+
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        jvmArgs = [
+                '--module-path', classpath.asPath,
+                '--add-modules', 'ALL-MODULE-PATH',
+                '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+                '--add-opens', 'io.github.sskorol.reflection/io.github.sskorol.reflection.testcases=org.jooq.joor',
+                '--add-opens', 'io.github.sskorol.reflection/io.github.sskorol.reflection.testcases=org.testng',
+                '--patch-module', "$moduleName=" + files(sourceSets.test.java.outputDir, sourceSets.test.output.resourcesDir).asPath
+        ]
+        classpath = files()
+    }
+}
